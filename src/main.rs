@@ -58,19 +58,19 @@ Echo the STRING(s) to standard output.
 #[derive(Debug)]
 struct Config {
     backslash_escapes: RefCell<bool>,
-    trailing_newline: bool,
+    trailing_newline: RefCell<bool>,
 }
 
 impl Config {
     fn new() -> Self {
         Config {
             backslash_escapes: RefCell::new(false),
-            trailing_newline: true,
+            trailing_newline: RefCell::new(true),
         }
     }
 
     fn find_flags<'a>(
-        &'a mut self,
+        &'a self,
         input: impl Iterator<Item = String> + 'a,
     ) -> impl Iterator<Item = String> + 'a
 // where
@@ -83,7 +83,7 @@ impl Config {
                 None
             }
             "-n" => {
-                self.trailing_newline = false;
+                *self.trailing_newline.borrow_mut() = false;
                 None
             }
             _ => Some(word),
@@ -97,17 +97,20 @@ fn main() {
     // println!("{}", std::env::args().skip(1).format(" "));
 
     // define standard config
-    let mut config = Config::new();
+    let config = Config::new();
 
+    println!(" 1: {:?}", config);
     // read input
     let input = env::args().skip(1);
     // config.find_flags(&input);
 
-    let mut content = *config.find_flags(input);
+    let mut content = config.find_flags(input);
 
-    let bs_e = *&config.backslash_escapes.borrow();
+    let bs_e = *config.backslash_escapes.borrow();
+    println!(" 2: {:?}", config);
+    // println!(" content {:#?}", content);
 
-    if let Some(first_word) = content.next() {
+    if let Some(first_word) = &content.next() {
         // first = format!("{}", word);
         if bs_e {
             print!("{}", replace_escapes(first_word));
@@ -117,7 +120,7 @@ fn main() {
         content.for_each(|word| {
             if let Some(word) = Some(word) {
                 if bs_e {
-                    print!(" {}", replace_escapes(word));
+                    print!(" {}", replace_escapes(&word));
                 } else {
                     print!(" {}", word);
                 }
@@ -127,7 +130,7 @@ fn main() {
 
     println!("\nDDD");
 
-    fn replace_escapes(word: String) -> String {
+    fn replace_escapes(word: &String) -> String {
         let mut output = String::new();
         let mut chars = word.chars();
         while let Some(c) = chars.next() {
