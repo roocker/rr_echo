@@ -1,4 +1,4 @@
-use std::env;
+use std::{cell::RefCell, env, error::Error, iter::FilterMap};
 
 /**
 # roocker's rust `echo`
@@ -57,33 +57,38 @@ Echo the STRING(s) to standard output.
 
 #[derive(Debug)]
 struct Config {
-    backslash_escapes: bool,
-    trailing_newline: bool,
+    backslash_escapes: RefCell<bool>,
+    trailing_newline: RefCell<bool>,
 }
 
 impl Config {
     fn new() -> Self {
         Config {
-            backslash_escapes: false,
-            trailing_newline: true,
+            backslash_escapes: RefCell::new(false),
+            trailing_newline: RefCell::new(true),
         }
     }
 
-    fn find_flags<'a, I>(&'a mut self, input: I) -> impl Iterator<Item = String> + 'a
-    where
-        I: Iterator<Item = String> + 'a,
+    fn find_flags<'a>(
+        &'a mut self,
+        input: impl Iterator<Item = String> + 'a,
+    ) -> impl Iterator<Item = String> + 'a
+// where
+    //     T: Iterator<Item = String>,
+    //     f: FnMut(String),
     {
-        input.filter_map(|word| match word.as_str() {
+        let input = input.filter_map(|word| match word.as_str() {
             "-e" => {
-                self.backslash_escapes = true;
+                *self.backslash_escapes.borrow_mut() = true;
                 None
             }
             "-n" => {
-                self.trailing_newline = false;
+                *self.trailing_newline.borrow_mut() = false;
                 None
             }
             _ => Some(word),
-        })
+        });
+        input
     }
 }
 
@@ -96,38 +101,29 @@ fn main() {
 
     // read input
     let input = env::args().skip(1);
+    // config.find_flags(&input);
 
-    //
-    config.find_flags(input);
+    let content = config.find_flags(input);
 
-    println!("\nconfig after find_flags {:?}\n", config);
-    // println!("\ninput after find_flags {:?}\n", input);
+    let bs_e = *config.backslash_escapes.borrow();
 
-    input.for_each(|word| {
-        if let word = word {
-            if config.backslash_escapes {
-                print!(" {}", replace_escapes(word));
-            } else {
-                print!(" {}", word);
-            }
-        }
-    });
-
-    // println!("input:{:?}", input);
-    // println!("{:?}", input);
-
-    // println!("after skip1:{:?}", input);
-
-    // let mut backslash_escapes = false;
-    // let mut trailing_newline = true;
-
-    // let mut first = String::new();
-    /* if let Some(first_word) = input.find_map(|word| word) {
+    if let Some(first_word) = content.next() {
         // first = format!("{}", word);
-        print!("{}", first_word);
-    }; */
-
-    // println!("\nafter first word:{:?} \n", input);
+        if bs_e {
+            print!("{}", replace_escapes(first_word));
+        } else {
+            print!("{}", first_word);
+        }
+        content.for_each(|word| {
+            if let Some(word) = Some(word) {
+                if bs_e {
+                    print!(" {}", replace_escapes(word));
+                } else {
+                    print!(" {}", word);
+                }
+            }
+        });
+    };
 
     println!("\nDDD");
 
