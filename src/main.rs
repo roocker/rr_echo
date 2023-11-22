@@ -1,4 +1,4 @@
-use std::{cell::RefCell, env, error::Error, iter::FilterMap};
+use std::{cell::RefCell, env};
 
 /**
 # roocker's rust `echo`
@@ -58,14 +58,14 @@ Echo the STRING(s) to standard output.
 #[derive(Debug)]
 struct Config {
     backslash_escapes: RefCell<bool>,
-    trailing_newline: RefCell<bool>,
+    trailing_newline: bool,
 }
 
 impl Config {
     fn new() -> Self {
         Config {
             backslash_escapes: RefCell::new(false),
-            trailing_newline: RefCell::new(true),
+            trailing_newline: true,
         }
     }
 
@@ -83,7 +83,7 @@ impl Config {
                 None
             }
             "-n" => {
-                *self.trailing_newline.borrow_mut() = false;
+                self.trailing_newline = false;
                 None
             }
             _ => Some(word),
@@ -103,9 +103,9 @@ fn main() {
     let input = env::args().skip(1);
     // config.find_flags(&input);
 
-    let content = config.find_flags(input);
+    let mut content = *config.find_flags(input);
 
-    let bs_e = *config.backslash_escapes.borrow();
+    let bs_e = *&config.backslash_escapes.borrow();
 
     if let Some(first_word) = content.next() {
         // first = format!("{}", word);
