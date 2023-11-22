@@ -55,6 +55,7 @@ Echo the STRING(s) to standard output.
 
 */
 
+#[derive(Debug)]
 struct Config {
     backslash_escapes: bool,
     trailing_newline: bool,
@@ -67,54 +68,66 @@ impl Config {
             trailing_newline: true,
         }
     }
-    fn find_flags<I>(&mut self, input: I)
+
+    fn find_flags<'a, I>(&'a mut self, input: I) -> impl Iterator<Item = String> + 'a
     where
-        I: Iterator<Item = String>,
+        I: Iterator<Item = String> + 'a,
     {
+        input.filter_map(|word| match word.as_str() {
+            "-e" => {
+                self.backslash_escapes = true;
+                None
+            }
+            "-n" => {
+                self.trailing_newline = false;
+                None
+            }
+            _ => Some(word),
+        })
     }
 }
+
 fn main() {
     // code a gnu echo command in rust use input variable as input
+    // println!("{}", std::env::args().skip(1).format(" "));
+
+    // define standard config
     let mut config = Config::new();
+
+    // read input
     let input = env::args().skip(1);
-    config.find_flags();
-    // println!("input:{:?}", input);
-    // println!("{:?}", input);
 
-    // println!("after skip1:{:?}", input);
+    //
+    config.find_flags(input);
 
-    let mut backslash_escapes = false;
-    let mut trailing_newline = true;
-
-    let mut input = input.map(|word| match word.as_str() {
-        "-e" => {
-            backslash_escapes = true;
-            None
-        }
-        "-n" => {
-            trailing_newline = false;
-            None
-        }
-        _ => Some(word),
-    });
-
-    // let mut first = String::new();
-    if let Some(first_word) = input.find_map(|word| word) {
-        // first = format!("{}", word);
-        print!("{}", first_word);
-    };
-
-    // println!("\nafter first word:{:?} \n", input);
+    println!("\nconfig after find_flags {:?}\n", config);
+    // println!("\ninput after find_flags {:?}\n", input);
 
     input.for_each(|word| {
-        if let Some(word) = word {
-            if backslash_escapes {
+        if let word = word {
+            if config.backslash_escapes {
                 print!(" {}", replace_escapes(word));
             } else {
                 print!(" {}", word);
             }
         }
     });
+
+    // println!("input:{:?}", input);
+    // println!("{:?}", input);
+
+    // println!("after skip1:{:?}", input);
+
+    // let mut backslash_escapes = false;
+    // let mut trailing_newline = true;
+
+    // let mut first = String::new();
+    /* if let Some(first_word) = input.find_map(|word| word) {
+        // first = format!("{}", word);
+        print!("{}", first_word);
+    }; */
+
+    // println!("\nafter first word:{:?} \n", input);
 
     println!("\nDDD");
 
