@@ -93,10 +93,7 @@ Echo the STRING(s) to standard output.
 fn main() {
     // println!("{}", std::env::args().skip(1).format(" ")); // most simple version?
 
-    // define standard config
     let config = Config::new();
-
-    // read input
     let input = env::args().skip(1);
 
     // does defining content here increase overhead?
